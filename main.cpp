@@ -53,12 +53,21 @@ struct Graph {
 int Dijkstra(const Graph& graph, int from_id, int to_id, int& visits) {
 	using edge_it = std::vector<int>::const_iterator;
 
-	visits = 0;
 
-	std::vector<int> cost; // cost to reach node with the particular id.
+	std::vector<int> cost(graph.nodes.size(), -1); // cost to reach node with the particular id.
 	std::priority_queue<CostForNode, std::vector<CostForNode>, std::greater<CostForNode>> queue;
 
-	cost.resize(graph.nodes.size(), -1);
+	//
+	// In our implementation:
+	// The cost[node_id] remains -1 (inf/unvisited) even once it has been inserted to the queue.
+	// a node may get multiple times in the priority queue with the path that inserted it initially.
+	// 
+	// The first time a node is popped from the queue the cost[node_id] is written and it is the
+	// shortest possible path. Costs from other paths may still exist in the priority queue 
+	// but they will be popped and skipped.
+	//
+
+	visits = 0;
 	queue.push(CostForNode::pair(0, from_id));
 
 
@@ -66,14 +75,14 @@ int Dijkstra(const Graph& graph, int from_id, int to_id, int& visits) {
 		CostForNode top_pair = queue.top();
 		queue.pop();
 
-		int top_cost = top_pair.first;
-		int top = top_pair.second;
+		const int top_cost = top_pair.first;
+		const int top = top_pair.second;
 
 		if (top == to_id) {
 			return top_cost;
 		}
 
-		// Someone already found this node. it is certainly a shortest path
+		// if there is a recorded cost for the node just popped, it means we popped a non optimal path.
 		if (cost[top] >= 0) {
 			continue;
 		}
@@ -96,7 +105,42 @@ int Dijkstra(const Graph& graph, int from_id, int to_id, int& visits) {
 	return -1;
 }
 
+struct Point {
+	int x;
+	int y;
+	
+	static Point FromId(int id, int row_size) {
+		Point p;
+		p.x = id % row_size;
+		p.y = id / row_size;
+		return p;
+	}
+};
+
+int CalcH(Point p1, Point p2) {
+	return (((p1.x - p2.x) << 2) + ((p1.y - p2.y) << 2)) >> 2;
+}
+
+int Astar(Graph& graph, int from_id, int to_id, int& visits, int row_size) {
+	using edge_it = std::vector<Edge>::iterator;
+	
+	Point target = Point::FromId(to_id, row_size);
+	
+	for (edge_it it = graph.edges.begin(); it != graph.edges.end(); ++it) {
+		Edge& edge = *it;
+
+
+		edge.cost = CalcH(Point::FromId(edge.node1, row_size), target)
+			- CalcH(Point::FromId(edge.node2, row_size), target)
+			+ edge.cost;
+	}
+
+	return Dijkstra(graph, from_id, to_id, visits) - CalcH(Point::FromId(from_id, row_size), target);
+}
+
+
 void MakeGraph(Graph& graph, int rows, int cols, int max_cost) {
+
 	graph.AddNode();
 	for (int row = 1; row < rows; ++row) {
 		int current = graph.AddNode();
@@ -119,7 +163,19 @@ int main()
 {
 	Graph g;
 
-	MakeGraph(g, 3, 3, 9);
-	Dijkstra(g, 0, 8);
+	int row_size = 800;
+
+	MakeGraph(g, row_size, 10000, 100);	
+	
+	int dv1 = 0;
+	int d1 = Dijkstra(g, 0, g.nodes.size() - 1, dv1);
+
+	std::cout << "Dijkstra: " << d1 << " visits: " << dv1 << "\n";
+
+	int dv2 = 0;
+	int d2 = Astar(g, 0, 8, dv1, row_size);
+
+	std::cout << "Astar: " << d1 << " visits: " << dv1 << "\n";
+
 
 }
