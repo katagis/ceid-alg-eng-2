@@ -152,9 +152,9 @@ public:
         }
 	}
 };
-
-
 static Benchmark Bench;
+
+
 
 bool TestGraph(int Graph, int TestNum = -1, const std::string& TestName = "") {
 	
