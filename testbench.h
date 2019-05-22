@@ -16,7 +16,32 @@ namespace ch = std::chrono;
 #include <sys/time.h>
 #endif
 
-bool GVerbose = false;
+
+// All the data our Benchmark should store for 1 test.
+struct TestData {
+	long long Time;
+	int Steps;
+
+	TestData() 
+		: Time(0)
+		, Steps(0) {}
+
+	TestData(long long time, int steps)
+		: Time(time)
+		, Steps(steps) {}
+};
+
+void operator+=(TestData& rhs, const TestData& lhs) {
+	rhs.Time += lhs.Time;
+	rhs.Steps += lhs.Steps;
+}
+
+bool operator<(TestData& rhs, const TestData& lhs) {
+	if (rhs.Time == lhs.Time) {
+		return rhs.Steps < lhs.Steps;
+	}
+	return rhs.Time < lhs.Time;
+}
 
 // Struct to hold the benchmark results.
 // Implementation can switch between chrono / unix time through defining USE_CHRONO.
@@ -25,10 +50,9 @@ bool GVerbose = false;
 
 struct Benchmark {
 
-
 private:
-	std::vector<long long> MyTime;
-	std::vector<long long> LedaTime;
+	std::vector<TestData> DijkTime;
+	std::vector<TestData> AstarTime;
 
 #ifdef USE_CHRONO
 	ch::time_point<ch::system_clock> StartTime;
@@ -65,75 +89,68 @@ private:
 #endif
 
 public:
-/*	std::string NameA;
-	std::string NameB;
-
-	Benchmark(const std::string& inNameA, const std::string& inNameB) 
-		: NameA(inNameA)
-		, NameB(inNameB) {
-	}
-*/
 
 	// Internal,  formats and prints a line with 2 times and their difference.
-	void PrintBenchLine(long long MyT, long long LedaT) {
+	void PrintBenchLine(TestData DijkT, TestData AstarT) {
 		static std::string TimestepStr = " \u03BCs";
 
-		std::cout << " | Mine: " << std::setw(7) << MyT << TimestepStr
-				 << " | Leda: " << std::setw(7) << LedaT << TimestepStr;
+		std::cout << "\n\t\tDijk: " << std::setw(7) << DijkT.Time << TimestepStr << " | " << std::setw(9) << DijkT.Steps << " steps"
+				 << "\n\t\tA*  : " << std::setw(7) << AstarT.Time << TimestepStr << " | " << std::setw(9) << AstarT.Steps << " steps";
 
-        if (MyT <= 0 || LedaT <= 0) {
+        if (DijkT.Time <= 0 || AstarT.Time <= 0) {
 		    std::cout << "\t- Invalid timer result detected. -\n";
             return;
         }
 
-		long long Hi = std::max(MyT, LedaT);
-		long long Lo = std::max(std::min(MyT, LedaT), 1LL);
+		long long Hi = std::max(DijkT.Time, AstarT.Time);
+		long long Lo = std::max(std::min(DijkT.Time, AstarT.Time), 1LL);
 		
 		int Percent = (int)std::floor(((float)Hi / Lo) * 100.f + 0.5f) - 100;
 		long long AbsDiff = Hi - Lo;
 
-		std::string Who = MyT < LedaT ? "Mine" : "Leda";
-		std::cout << "\t" << Who << " is faster by: " << std::setw(3) << Percent << "% (" << std::setw(7) << AbsDiff << TimestepStr << ")\n" ;
+		std::string Who = DijkT < AstarT ? "\n\tDijk" : "A*  ";
+		int StepDiff = DijkT < AstarT ? DijkT.Steps - AstarT.Steps : AstarT.Steps - DijkT.Steps;
+		std::cout << "\t" << Who << " is faster by: " << std::setw(3) << Percent << "% (" << std::setw(7) << AbsDiff << TimestepStr << ") Step Difference: " << StepDiff << " \n" ;
 	}
 
 public:
 
 	void Reset() {
-		MyTime.clear();
-		LedaTime.clear();
+		DijkTime.clear();
+		AstarTime.clear();
 	}
 
 	void StartTest() {
 		RestartTimer();
 	}
 
-	// The leda test has finished and my test is starting
-	void SwitchTest() {
+	// The Dijkstra test has finished and Astar test is starting
+	void SwitchTest(int Steps) {
 		long long Duration = GetCurrent();
-		LedaTime.push_back(Duration);
+		DijkTime.push_back(TestData(Duration, Steps));
 		RestartTimer();
 	}
 
-    void StopTest() {
+    void StopTest(int Steps) {
 		long long Duration = GetCurrent();
-		MyTime.push_back(Duration);
+		AstarTime.push_back(TestData(Duration, Steps));
 	}
 
 	// Print the last added test.
 	void PrintLast() {
-		size_t Index = MyTime.size() - 1;
-		PrintBenchLine(MyTime[Index], LedaTime[Index]);
+		size_t Index = DijkTime.size() - 1;
+		PrintBenchLine(DijkTime[Index], AstarTime[Index]);
 	}
 
 	// Calculate and print total stats.
 	void Print() {
         bool ContainsInvalidResult = false;
-		long long MyTotal = 0;
-		long long LedaTotal = 0;
-		for (int i = 0; i < MyTime.size(); ++i) {
-            if (MyTime[i] > 0 && LedaTime[i] > 0) {
-                MyTotal += MyTime[i];
-                LedaTotal += LedaTime[i];
+		TestData DijkTotal;
+		TestData AstarTotal;
+		for (int i = 0; i < DijkTime.size(); ++i) {
+            if (DijkTime[i].Time > 0 && AstarTime[i].Time > 0) {
+                DijkTotal += DijkTime[i];
+                AstarTotal += AstarTime[i];
             }
             else {
                 ContainsInvalidResult = true;
@@ -141,7 +158,7 @@ public:
 		}
 
 		std::cout << "Totals:";
-		PrintBenchLine(MyTotal, LedaTotal);
+		PrintBenchLine(DijkTotal, AstarTotal);
         std::cout << "\n";
 
         if (ContainsInvalidResult) {
@@ -152,44 +169,3 @@ public:
         }
 	}
 };
-
-
-static Benchmark Bench;
-
-bool TestGraph(int Graph, int TestNum = -1, const std::string& TestName = "") {
-	
-	Bench.StartTest();
-	// run test 1
-	Bench.SwitchTest();
-	// run test 2
-	Bench.StopTest();
-
-
-	bool SameResult = true;
-	bool TestResult = true;
-
-	if (GVerbose) {
-		//std::cout << "Ret\t> My: " << MyResult << " | Leda: " << LedaResult << "\n";
-		
-	}
-
-
-	const int MaxNameLen = 16;
-	
-	std::ostringstream PaddedName;
-	PaddedName <<  ": " << TestName.substr(0, MaxNameLen - 2);
-
-	std::cout << "# Test " << std::setw(2) << TestNum 
-			  << std::left << std::setw(MaxNameLen) << PaddedName.str() << "| " << std::right; 
-	
-	if (TestResult){
-		//std::string ResultStr = MyResult == true ? "yes" : "no ";
-		//std::cout << ResultStr;
-		Bench.PrintLast();
-	}
-	else {
-		std::cout << "# Test failed. Results are different.\n";
-	}
-
-	return TestResult;
-}
