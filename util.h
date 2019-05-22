@@ -1,5 +1,8 @@
 #ifndef __UTIL_H_
 #define __UTIL_H_
+#include <vector>
+#include <unordered_set>
+#include <iostream>
 
 static Benchmark Bench;
 
@@ -108,7 +111,7 @@ void TestGraph(Graph& graph, int TestNum, const std::string& TestName) {
 	int start_id = graph.FromXY(0,0);
 	int end_id = graph.FromXY(graph.rows - 1, graph.cols - 1);
 
-	std::cout << "From: " << start_id << " To: " << end_id << "\n";
+	//std::cout << "From: " << start_id << " To: " << end_id << "\n";
 
 
 	Bench.StartTest();
@@ -139,7 +142,38 @@ void TestGraph(Graph& graph, int TestNum, const std::string& TestName) {
 }
 
 void AdvancedPrint(const Graph& g, const std::vector<CostType>& Costs, std::vector<int> Predecessor, int StartId, int TargetId) {
+	
+	std::unordered_set<int> SelectedPath;
 
+	CostType TheResult = 0;
+
+	int CurrNode = TargetId;
+	while (CurrNode != StartId) {
+		
+		SelectedPath.insert(Predecessor[CurrNode]);
+		const Edge& edge = g.edges[Predecessor[CurrNode]];
+		TheResult += edge.cost;
+		CurrNode = edge.node1 == CurrNode ? edge.node2 : edge.node1;
+		
+	}
+
+	std::cerr << "digraph G {\n";
+	
+	for (int i = 0; i < g.nodes.size(); ++i) {
+		std::cerr << i << " [label=\"" << i << "|" << std::setprecision(3) << Costs[i] << "\"]\n";
+	}
+
+	for (int i = 0; i < g.edges.size(); ++i) {
+		const Edge& edge = g.edges[i];
+
+		std::cerr << edge.node1 << " -> " << edge.node2
+			<< "[label=\"" << edge.cost << "\", weight=\"" << std::setprecision(4) << edge.cost << "\", arrowhead=none "
+			<< (SelectedPath.count(i) > 0 ? ", color=red, penwidth=3" : "")
+			<< "];\n";
+	}
+
+	std::cerr << "}\n";
+	std::cerr << "Result: " << TheResult;
 }
 
 

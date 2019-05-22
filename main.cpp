@@ -16,7 +16,7 @@ CostType CalcH(Point p1, Point p2) {
 
 #define DEBUG_RESULT
 CostType Dijkstra(const Graph& graph, int from_id, int to_id, int& visits) {
-	using CostForNode = std::pair<CostType, int>;
+	using CostForNode = std::pair<CostType, std::pair<int, int>>;
 	using edge_it = std::vector<int>::const_iterator;
 
 
@@ -34,11 +34,10 @@ CostType Dijkstra(const Graph& graph, int from_id, int to_id, int& visits) {
 	//
 
 	visits = 0;
-	queue.push(CostForNode::pair(0.0f, from_id));
+	queue.push(CostForNode::pair(0.0f, std::pair<int, int>(from_id, -1)));
 
 #ifdef DEBUG_RESULT
 	std::vector<int> predecessor_edge(graph.nodes.size(), -1);
-
 #endif
 
 	while (!queue.empty()) {
@@ -46,23 +45,29 @@ CostType Dijkstra(const Graph& graph, int from_id, int to_id, int& visits) {
 		queue.pop();
 
 		const CostType top_cost = top_pair.first;
-		const int top = top_pair.second;
+		const int top = top_pair.second.first;
 
 		if (top == to_id) {
+#ifdef DEBUG_RESULT
+			cost[to_id] = top_cost;
+			predecessor_edge[to_id] = top_pair.second.second;
+			AdvancedPrint(graph, cost, predecessor_edge, from_id, to_id);
+			getchar();
+#endif
 			return top_cost;
 		}
 
 		// if there is a recorded cost for the node just popped, it means we popped a non optimal path.
 		if (cost[top] >= 0) {
-#ifdef DEBUG_RESULT
-			std::vector<int> predecessor_edge(graph.nodes.size(), -1);
-
-#endif
 			continue;
 		}
 
 		cost[top] = top_cost;
 		visits++;
+
+#ifdef DEBUG_RESULT
+		predecessor_edge[top] = top_pair.second.second;		
+#endif
 
 		const std::vector<int>& adj_edges = graph.nodes[top].edges;
 		for (edge_it it = adj_edges.cbegin(); it != adj_edges.cend(); ++it) {
@@ -72,7 +77,7 @@ CostType Dijkstra(const Graph& graph, int from_id, int to_id, int& visits) {
 
 			if (cost[target] < 0) {
 				const CostType tot_cost = edge.cost + top_cost;
-				queue.push(CostForNode::pair(tot_cost, target));
+				queue.push(CostForNode::pair(tot_cost, std::pair<int, int>(target, *it)));
 			}
 		}
 	}
@@ -97,7 +102,7 @@ CostType Astar(Graph& graph, int from_id, int to_id, int& visits) {
 
 int main()
 {
-	Graph g(10, 20, 9);
+	Graph g(10, 20, 100);
 
 	
 	TestGraph(g, 0,  "800x1000");
