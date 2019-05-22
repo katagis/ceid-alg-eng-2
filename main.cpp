@@ -7,16 +7,20 @@
 #include <queue>
 
 CostType CalcH(Point p1, Point p2) {
-	return std::sqrtf((float)((p1.x - p2.x) << 2) + ((p1.y - p2.y) << 2));
+	return std::sqrtf(
+		std::pow(p1.x - p2.x, 2) + std::pow(p1.y - p2.y, 2)
+		);
+
 	//return (((p1.x - p2.x) << 2) + ((p1.y - p2.y) << 2)) >> 2;
 }
 
+#define DEBUG_RESULT
 CostType Dijkstra(const Graph& graph, int from_id, int to_id, int& visits) {
 	using CostForNode = std::pair<CostType, int>;
 	using edge_it = std::vector<int>::const_iterator;
 
 
-	std::vector<int> cost(graph.nodes.size(), -1); // cost to reach node with the particular id.
+	std::vector<CostType> cost(graph.nodes.size(), -1); // cost to reach node with the particular id.
 	std::priority_queue<CostForNode, std::vector<CostForNode>, std::greater<CostForNode>> queue;
 
 	//
@@ -30,8 +34,12 @@ CostType Dijkstra(const Graph& graph, int from_id, int to_id, int& visits) {
 	//
 
 	visits = 0;
-	queue.push(CostForNode::pair(0, from_id));
+	queue.push(CostForNode::pair(0.0f, from_id));
 
+#ifdef DEBUG_RESULT
+	std::vector<int> predecessor_edge(graph.nodes.size(), -1);
+
+#endif
 
 	while (!queue.empty()) {
 		CostForNode top_pair = queue.top();
@@ -46,6 +54,10 @@ CostType Dijkstra(const Graph& graph, int from_id, int to_id, int& visits) {
 
 		// if there is a recorded cost for the node just popped, it means we popped a non optimal path.
 		if (cost[top] >= 0) {
+#ifdef DEBUG_RESULT
+			std::vector<int> predecessor_edge(graph.nodes.size(), -1);
+
+#endif
 			continue;
 		}
 
@@ -73,17 +85,19 @@ CostType Astar(Graph& graph, int from_id, int to_id, int& visits) {
 	Point target = graph.ToPoint(to_id);
 	
 	for (edge_it it = graph.edges.begin(); it != graph.edges.end(); ++it) {
-		it->cost +=
-			CalcH(graph.ToPoint(it->node1), target) -
-			CalcH(graph.ToPoint(it->node2), target);			
-	}
+		CostType n1 = CalcH(graph.ToPoint(it->node1), target);
+		CostType n2 = CalcH(graph.ToPoint(it->node2), target);
 
-	return Dijkstra(graph, from_id, to_id, visits) - CalcH(graph.ToPoint(from_id), target);
+		it->cost += n1 - n2;
+	}
+	CostType result = Dijkstra(graph, from_id, to_id, visits);
+
+	return result - CalcH(graph.ToPoint(from_id), target);
 }
 
 int main()
 {
-	Graph g(80, 1000, 9);
+	Graph g(10, 20, 9);
 
 	
 	TestGraph(g, 0,  "800x1000");

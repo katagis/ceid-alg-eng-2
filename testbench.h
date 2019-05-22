@@ -92,10 +92,10 @@ public:
 
 	// Internal,  formats and prints a line with 2 times and their difference.
 	void PrintBenchLine(TestData DijkT, TestData AstarT) {
-		static std::string TimestepStr = " \u03BCs";
-
-		std::cout << "\n\t\tDijk: " << std::setw(7) << DijkT.Time << TimestepStr << " | " << std::setw(9) << DijkT.Steps << " steps"
-				 << "\n\t\tA*  : " << std::setw(7) << AstarT.Time << TimestepStr << " | " << std::setw(9) << AstarT.Steps << " steps";
+		static std::string TimestepStr = " micros";
+		std::cout << std::right;
+		std::cout << "\n\t| Dijk: " << std::setw(7) << DijkT.Time << TimestepStr << " | " << std::setw(3) << DijkT.Steps << " steps"
+				 << "\n\t| A*  : " << std::setw(7) << AstarT.Time << TimestepStr << " | " << std::setw(3) << AstarT.Steps << " steps";
 
         if (DijkT.Time <= 0 || AstarT.Time <= 0) {
 		    std::cout << "\t- Invalid timer result detected. -\n";
@@ -108,9 +108,9 @@ public:
 		int Percent = (int)std::floor(((float)Hi / Lo) * 100.f + 0.5f) - 100;
 		long long AbsDiff = Hi - Lo;
 
-		std::string Who = DijkT < AstarT ? "\n\tDijk" : "A*  ";
+		std::string Who = DijkT < AstarT ? "Dijk" : "A* ";
 		int StepDiff = DijkT < AstarT ? DijkT.Steps - AstarT.Steps : AstarT.Steps - DijkT.Steps;
-		std::cout << "\t" << Who << " is faster by: " << std::setw(3) << Percent << "% (" << std::setw(7) << AbsDiff << TimestepStr << ") Step Difference: " << StepDiff << " \n" ;
+		std::cout << "\n\t| " << Who << " is faster by: " << std::setw(3) << Percent << "% ( " << AbsDiff << TimestepStr << " ) Step Difference: " << StepDiff << " \n" ;
 	}
 
 public:

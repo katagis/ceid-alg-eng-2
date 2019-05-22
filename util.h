@@ -1,9 +1,9 @@
 #ifndef __UTIL_H_
 #define __UTIL_H_
 
-using CostType = int;
-
 static Benchmark Bench;
+
+using CostType = float;
 
 struct Node {
 	std::vector<int> edges;
@@ -30,17 +30,19 @@ struct Graph {
 	std::vector<Node> nodes;
 	std::vector<Edge> edges;
 
-	int row_size;
+	int rows;
+	int cols;
 
-	Graph(int rows, int cols, int max_cost) {
-		row_size = cols;
+	Graph(int rows_, int cols_, int max_cost) {
+		rows = rows_;
+		cols = cols_;
 		// Add top left node,
 		AddNode();
 
 		// Add first column
 		for (int row = 1; row < rows; ++row) {
 			int current = AddNode();
-			Connect(current - 1, current, std::rand() % max_cost + 1);
+			Connect(current - 1, current, std::rand() % max_cost + 1.0f);
 		}
 
 		for (int x = 1; x < cols; ++x) {
@@ -48,9 +50,9 @@ struct Graph {
 				int current = AddNode();
 				// The first of each column does not connect to the previous
 				if (y > 0) {
-					Connect(current - 1, current, std::rand() % max_cost + 1);
+					Connect(current - 1, current, std::rand() % max_cost + 1.0f);
 				}
-				Connect(current - rows, current, std::rand() % max_cost + 1);
+				Connect(current - rows, current, std::rand() % max_cost + 1.0f);
 			}
 		}
 	}
@@ -82,50 +84,63 @@ struct Graph {
 	}
 
 	Point ToPoint(int id) {
-		return Point(id % row_size, id / row_size);
+		return Point(id % rows, id / rows);
 	}
+
+	int FromXY(int x, int y) {
+		return x + y * rows;
+	}
+
 };
 
 
 CostType Astar(Graph& graph, int from_id, int to_id, int& visits);
 CostType Dijkstra(const Graph& graph, int from_id, int to_id, int& visits);
 
+int round_to_i(float f) {
+	return (int)std::floor((f) + 0.5f);
+}
+
 void TestGraph(Graph& graph, int TestNum, const std::string& TestName) {
 
 	int visits = 0;
 
-	int start_id = 0;//std::rand() % row_size;
-	int end_id = graph.nodes.size() - 1;// -(std::rand() % row_size) - 1;
+	int start_id = graph.FromXY(0,0);
+	int end_id = graph.FromXY(graph.rows - 1, graph.cols - 1);
 
 	std::cout << "From: " << start_id << " To: " << end_id << "\n";
 
 
 	Bench.StartTest();
-	int dijkstra_result = Dijkstra(graph, start_id, end_id, visits);
+	int dijkstra_result = round_to_i(Dijkstra(graph, start_id, end_id, visits));
 
 	Bench.SwitchTest(visits);
 	visits = 0;
-	int astar_result = Astar(graph, start_id, end_id, visits);
+	int astar_result = round_to_i(Astar(graph, start_id, end_id, visits));
 	Bench.StopTest(visits);
 
 
 	std::ostringstream PaddedName;
-	PaddedName << ": " << TestName.substr(0, 14 - 2);
+	PaddedName << ": " << TestName.substr(0, 10 - 2);
 
 	std::cout << "# Test " << std::setw(2) << TestNum
-		<< std::left << std::setw(14) << PaddedName.str() << "| ";
+		<< std::left << std::setw(10) << PaddedName.str() << " > ";
 
-	if (dijkstra_result == astar_result) {
-		std::cout << std::setw(5) << std::right << astar_result;
-		Bench.PrintLast();
+	if (dijkstra_result != astar_result) {
+		std::cout << "# Test failed. Results are different.\n";
+		std::cout << "# Dijk: " << dijkstra_result << " Astar: " << astar_result;
+		
 	}
 	else {
-		std::cout << "# Test failed. Results are different.\n";
-		std::cout << "Dijk: " << dijkstra_result << " Astar: " << astar_result << "\n";
+		std::cout << "Distance: " << astar_result;
 	}
+	
+	Bench.PrintLast();
 }
 
+void AdvancedPrint(const Graph& g, const std::vector<CostType>& Costs, std::vector<int> Predecessor, int StartId, int TargetId) {
 
+}
 
 
 #endif
