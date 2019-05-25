@@ -6,7 +6,7 @@
 
 static Benchmark Bench;
 
-using CostType = float;
+using CostType = double;
 
 struct Node {
 	std::vector<int> edges;
@@ -14,8 +14,8 @@ struct Node {
 
 struct Edge {
 	CostType cost;
-	int node1;
-	int node2;
+	int from;
+	int to;
 };
 
 struct Point {
@@ -63,11 +63,17 @@ struct Graph {
 	void Connect(int node1, int node2, CostType cost) {
 		Edge e;
 		e.cost = cost;
-		e.node1 = node1;
-		e.node2 = node2;
+		e.from = node1;
+		e.to = node2;
 		int id = edges.size();
 		edges.push_back(e);
 		nodes[node1].edges.push_back(id);
+		
+		e.cost = cost;
+		e.from = node2;
+		e.to = node1;
+		id = edges.size();
+		edges.push_back(e);
 		nodes[node2].edges.push_back(id);
 	}
 
@@ -80,8 +86,8 @@ struct Graph {
 	void GraphVisPrint() const {
 		std::cerr << "digraph G {\n";
 		for (const auto& edge : edges) {
-			std::cerr << edge.node1 << " -> " << edge.node2
-				<< "[label=\"" << edge.cost << "\", weight=\"" << edge.cost << "\", arrowhead=none];\n";
+			std::cerr << edge.from << " -> " << edge.to
+				<< "[label=\"" << edge.cost << "\", weight=\"" << edge.cost << "\"];\n";
 		}
 		std::cerr << "}\n";
 	}
@@ -108,10 +114,10 @@ void TestGraph(Graph& graph, int TestNum, const std::string& TestName) {
 
 	int visits = 0;
 
-	int start_id = graph.FromXY(0,0);
-	int end_id = graph.FromXY(graph.rows - 1, graph.cols - 1);
+	int start_id = graph.FromXY(std::rand() % graph.rows, 0);
+	int end_id = graph.FromXY(graph.rows - (std::rand() % graph.rows) - 1, graph.cols - 1);
 
-	//std::cout << "From: " << start_id << " To: " << end_id << "\n";
+	std::cout << "From: " << start_id << " To: " << end_id << "\n";
 
 
 	Bench.StartTest();
@@ -153,7 +159,7 @@ void AdvancedPrint(const Graph& g, const std::vector<CostType>& Costs, std::vect
 		SelectedPath.insert(Predecessor[CurrNode]);
 		const Edge& edge = g.edges[Predecessor[CurrNode]];
 		TheResult += edge.cost;
-		CurrNode = edge.node1 == CurrNode ? edge.node2 : edge.node1;
+		CurrNode = edge.from;
 		
 	}
 
@@ -166,8 +172,8 @@ void AdvancedPrint(const Graph& g, const std::vector<CostType>& Costs, std::vect
 	for (int i = 0; i < g.edges.size(); ++i) {
 		const Edge& edge = g.edges[i];
 
-		std::cerr << edge.node1 << " -> " << edge.node2
-			<< "[label=\"" << edge.cost << "\", weight=\"" << std::setprecision(4) << edge.cost << "\", arrowhead=none "
+		std::cerr << edge.from << " -> " << edge.to
+			<< "[label=\"" << edge.cost << "\", weight=\"" << std::setprecision(4) << edge.cost << "\""
 			<< (SelectedPath.count(i) > 0 ? ", color=red, penwidth=3" : "")
 			<< "];\n";
 	}

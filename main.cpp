@@ -14,7 +14,7 @@ CostType CalcH(Point p1, Point p2) {
 	//return (((p1.x - p2.x) << 2) + ((p1.y - p2.y) << 2)) >> 2;
 }
 
-#define DEBUG_RESULT
+//#define DEBUG_RESULT
 CostType Dijkstra(const Graph& graph, int from_id, int to_id, int& visits) {
 	using CostForNode = std::pair<CostType, std::pair<int, int>>;
 	using edge_it = std::vector<int>::const_iterator;
@@ -54,6 +54,7 @@ CostType Dijkstra(const Graph& graph, int from_id, int to_id, int& visits) {
 			AdvancedPrint(graph, cost, predecessor_edge, from_id, to_id);
 			getchar();
 #endif
+
 			return top_cost;
 		}
 
@@ -73,7 +74,7 @@ CostType Dijkstra(const Graph& graph, int from_id, int to_id, int& visits) {
 		for (edge_it it = adj_edges.cbegin(); it != adj_edges.cend(); ++it) {
 			const Edge& edge = graph.edges[*it];
 
-			int target = edge.node1 == top ? edge.node2 : edge.node1;
+			int target = edge.to;
 
 			if (cost[target] < 0) {
 				const CostType tot_cost = edge.cost + top_cost;
@@ -90,20 +91,39 @@ CostType Astar(Graph& graph, int from_id, int to_id, int& visits) {
 	Point target = graph.ToPoint(to_id);
 	
 	for (edge_it it = graph.edges.begin(); it != graph.edges.end(); ++it) {
-		CostType n1 = CalcH(graph.ToPoint(it->node1), target);
-		CostType n2 = CalcH(graph.ToPoint(it->node2), target);
+		CostType n1 = CalcH(graph.ToPoint(it->from), target);
+		CostType n2 = CalcH(graph.ToPoint(it->to), target);
 
-		it->cost += n1 - n2;
+		it->cost += std::abs(n1 - n2);
 	}
 	CostType result = Dijkstra(graph, from_id, to_id, visits);
 
-	return result - CalcH(graph.ToPoint(from_id), target);
+
+	CostType h_s = CalcH(graph.ToPoint(from_id), target);
+	CostType h_t = CalcH(graph.ToPoint(to_id), target);
+
+	std::cerr << "h(s): " << h_s << " h(t): " << h_t << std::endl;
+
+	return result - std::abs(h_s - h_t);
 }
 
 int main()
 {
-	Graph g(10, 20, 100);
+	//std::srand(time(NULL));
+	Graph g(80, 1000, 1000);
 
+/*	g.edges.clear();
+
+	g.Connect(0, 1, 5);
+	g.Connect(0, 3, 5);
+	g.Connect(1, 2, 60);
+	g.Connect(1, 4, 5);
+	g.Connect(2, 5, 5);
+	g.Connect(3, 4, 60);
+	g.Connect(4, 5, 5);
+	*/
+
+	
 	
 	TestGraph(g, 0,  "800x1000");
 
