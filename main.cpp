@@ -1,3 +1,7 @@
+bool GDirected = false;
+#define SELECT_ON_GRAPH(UndirectedCode, DirectedCode) if (!GDirected) { UndirectedCode } else { DirectedCode }
+
+
 #include "testbench.h"
 #include "util.h"
 #include <iostream>
@@ -7,14 +11,15 @@
 #include <queue>
 
 CostType CalcH(Point p1, Point p2) {
-	return std::sqrtf(
+	return std::sqrt(
 		std::pow(p1.x - p2.x, 2) + std::pow(p1.y - p2.y, 2)
 		);
 
 	//return (((p1.x - p2.x) << 2) + ((p1.y - p2.y) << 2)) >> 2;
 }
 
-//#define DEBUG_RESULT
+bool GDebugResult = false;
+#define DEBUG_RESULT
 CostType Dijkstra(const Graph& graph, int from_id, int to_id, int& visits) {
 	using CostForNode = std::pair<CostType, std::pair<int, int>>;
 	using edge_it = std::vector<int>::const_iterator;
@@ -49,10 +54,11 @@ CostType Dijkstra(const Graph& graph, int from_id, int to_id, int& visits) {
 
 		if (top == to_id) {
 #ifdef DEBUG_RESULT
-			cost[to_id] = top_cost;
-			predecessor_edge[to_id] = top_pair.second.second;
-			AdvancedPrint(graph, cost, predecessor_edge, from_id, to_id);
-			getchar();
+			if (GDebugResult) {
+				cost[to_id] = top_cost;
+				predecessor_edge[to_id] = top_pair.second.second;
+				AdvancedPrint(graph, cost, predecessor_edge, from_id, to_id);
+			}
 #endif
 
 			return top_cost;
@@ -73,8 +79,11 @@ CostType Dijkstra(const Graph& graph, int from_id, int to_id, int& visits) {
 		const std::vector<int>& adj_edges = graph.nodes[top].edges;
 		for (edge_it it = adj_edges.cbegin(); it != adj_edges.cend(); ++it) {
 			const Edge& edge = graph.edges[*it];
-
+			
 			int target = edge.to;
+			if (!GDirected) {
+				target = edge.to == top ? edge.from : edge.to;
+			}
 
 			if (cost[target] < 0) {
 				const CostType tot_cost = edge.cost + top_cost;
@@ -94,7 +103,8 @@ CostType Astar(Graph& graph, int from_id, int to_id, int& visits) {
 		CostType n1 = CalcH(graph.ToPoint(it->from), target);
 		CostType n2 = CalcH(graph.ToPoint(it->to), target);
 
-		it->cost += std::abs(n1 - n2);
+
+		it->cost += n1 - n2;
 	}
 	CostType result = Dijkstra(graph, from_id, to_id, visits);
 
@@ -110,21 +120,50 @@ CostType Astar(Graph& graph, int from_id, int to_id, int& visits) {
 int main()
 {
 	//std::srand(time(NULL));
-	Graph g(80, 1000, 1000);
 
-/*	g.edges.clear();
+	// Error 1 example:
+	//std::srand(120);
+	//Graph g(4, 22, 1000);
 
-	g.Connect(0, 1, 5);
+
+	
+
+	//Graph g(3, 3);
+	/*
+	g.Connect(0, 1, 50);
+	g.Connect(1, 2, 50);
 	g.Connect(0, 3, 5);
-	g.Connect(1, 2, 60);
 	g.Connect(1, 4, 5);
-	g.Connect(2, 5, 5);
-	g.Connect(3, 4, 60);
-	g.Connect(4, 5, 5);
+	g.Connect(2, 5, 10);
+	g.Connect(3, 4, 10);
+	g.Connect(4, 5, 10);
+	
+
+	g.Connect(3, 6, 3);
+	g.Connect(4, 7, 5);
+	g.Connect(5, 8, 50);
+
+
+	g.Connect(6, 7, 50);
+	g.Connect(7, 8, 50);
 	*/
 
+	// std::srand(i);
+	// Graph g(4, 4, 10);
+
+	
+	for (int i = 0; i < 10000; ++i) {
+		std::srand(1);
+		Graph g(3, 3, 10);
+		if (!TestGraph(g, 0, "800x1000")) {
+			std::cout << "ERROR AT SEED: " << i;
+			getchar();
+			getchar();
+			GDebugResult = true;
+			--i;
+		}
+	}
 	
 	
-	TestGraph(g, 0,  "800x1000");
 
 }

@@ -8,6 +8,10 @@ static Benchmark Bench;
 
 using CostType = double;
 
+std::string DirectedArrowhead() {
+	return GDirected ? "" : ", arrowhead=none";
+}
+
 struct Node {
 	std::vector<int> edges;
 };
@@ -35,6 +39,15 @@ struct Graph {
 
 	int rows;
 	int cols;
+
+
+	Graph(int rows_, int cols_) {
+		rows = rows_;
+		cols = cols_;
+		for (int i = 0; i < rows * cols; ++i) {
+			AddNode();
+		}
+	}
 
 	Graph(int rows_, int cols_, int max_cost) {
 		rows = rows_;
@@ -68,12 +81,6 @@ struct Graph {
 		int id = edges.size();
 		edges.push_back(e);
 		nodes[node1].edges.push_back(id);
-		
-		e.cost = cost;
-		e.from = node2;
-		e.to = node1;
-		id = edges.size();
-		edges.push_back(e);
 		nodes[node2].edges.push_back(id);
 	}
 
@@ -87,7 +94,7 @@ struct Graph {
 		std::cerr << "digraph G {\n";
 		for (const auto& edge : edges) {
 			std::cerr << edge.from << " -> " << edge.to
-				<< "[label=\"" << edge.cost << "\", weight=\"" << edge.cost << "\"];\n";
+				<< "[label=\"" << edge.cost << "\", weight=\"" << edge.cost << "\"" << DirectedArrowhead() << "];\n";
 		}
 		std::cerr << "}\n";
 	}
@@ -110,13 +117,18 @@ int round_to_i(float f) {
 	return (int)std::floor((f) + 0.5f);
 }
 
-void TestGraph(Graph& graph, int TestNum, const std::string& TestName) {
+bool TestGraph(Graph& graph, int TestNum, const std::string& TestName, int start_id = -1, int end_id = -1) {
 
 	int visits = 0;
 
-	int start_id = graph.FromXY(std::rand() % graph.rows, 0);
-	int end_id = graph.FromXY(graph.rows - (std::rand() % graph.rows) - 1, graph.cols - 1);
+	if (start_id == -1) {
+		start_id = graph.FromXY(std::rand() % graph.rows, 0);
+	}
 
+	if (end_id == -1) {
+		end_id = graph.FromXY(graph.rows - (std::rand() % graph.rows) - 1, graph.cols - 1);
+	}
+	
 	std::cout << "From: " << start_id << " To: " << end_id << "\n";
 
 
@@ -138,13 +150,14 @@ void TestGraph(Graph& graph, int TestNum, const std::string& TestName) {
 	if (dijkstra_result != astar_result) {
 		std::cout << "# Test failed. Results are different.\n";
 		std::cout << "# Dijk: " << dijkstra_result << " Astar: " << astar_result;
-		
+		return false;
 	}
 	else {
 		std::cout << "Distance: " << astar_result;
 	}
 	
 	Bench.PrintLast();
+	return true;
 }
 
 void AdvancedPrint(const Graph& g, const std::vector<CostType>& Costs, std::vector<int> Predecessor, int StartId, int TargetId) {
@@ -159,7 +172,13 @@ void AdvancedPrint(const Graph& g, const std::vector<CostType>& Costs, std::vect
 		SelectedPath.insert(Predecessor[CurrNode]);
 		const Edge& edge = g.edges[Predecessor[CurrNode]];
 		TheResult += edge.cost;
-		CurrNode = edge.from;
+
+		if (!GDirected) {
+			CurrNode = edge.to == CurrNode ? edge.to : edge.from;
+		}
+		else {
+			CurrNode = edge.from;
+		}		
 		
 	}
 
@@ -172,8 +191,9 @@ void AdvancedPrint(const Graph& g, const std::vector<CostType>& Costs, std::vect
 	for (int i = 0; i < g.edges.size(); ++i) {
 		const Edge& edge = g.edges[i];
 
+
 		std::cerr << edge.from << " -> " << edge.to
-			<< "[label=\"" << edge.cost << "\", weight=\"" << std::setprecision(4) << edge.cost << "\""
+			<< "[label=\"" << edge.cost << "\", weight=\"" << std::setprecision(4) << edge.cost << "\"" << DirectedArrowhead()
 			<< (SelectedPath.count(i) > 0 ? ", color=red, penwidth=3" : "")
 			<< "];\n";
 	}
