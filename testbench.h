@@ -127,11 +127,11 @@ public:
 		RestartTimer();
 	}
 
-	// The Dijkstra test has finished and Astar test is starting
+	// The Dijkstra test has finished
+	// does not start the timer instantly.
 	void SwitchTest(int Steps) {
 		long long Duration = GetCurrent();
 		DijkTime.push_back(TestData(Duration, Steps));
-		RestartTimer();
 	}
 
     void StopTest(int Steps) {

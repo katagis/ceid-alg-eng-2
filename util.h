@@ -10,11 +10,8 @@ bool GDebugResult = false;
 
 static Benchmark Bench;
 
-using CostType = double;
-
-std::string DirectedArrowhead() {
-	return GDirected ? "" : ", arrowhead=none";
-}
+// Used during development to performance differences between calculation types.
+using CostType = float;
 
 struct Node {
 	std::vector<int> edges;
@@ -43,19 +40,13 @@ struct Graph {
 
 	int rows;
 	int cols;
+	int max_cost;
 
-
-	Graph(int rows_, int cols_) {
+	Graph(int rows_, int cols_, int max_cost_) {
 		rows = rows_;
 		cols = cols_;
-		for (int i = 0; i < rows * cols; ++i) {
-			AddNode();
-		}
-	}
+		max_cost = max_cost_;
 
-	Graph(int rows_, int cols_, int max_cost) {
-		rows = rows_;
-		cols = cols_;
 		// Add top left node,
 		AddNode();
 
@@ -65,6 +56,7 @@ struct Graph {
 			Connect(current - 1, current, std::rand() % max_cost + 1.0f);
 		}
 
+		// Add the rest
 		for (int x = 1; x < cols; ++x) {
 			for (int y = 0; y < rows; ++y) {
 				int current = AddNode();
@@ -104,15 +96,6 @@ struct Graph {
 		return id;
 	}
 
-	void GraphVisPrint() const {
-		std::cerr << "digraph G {\n";
-		for (const auto& edge : edges) {
-			std::cerr << edge.from << " -> " << edge.to
-				<< "[label=\"" << edge.cost << "\", weight=\"" << edge.cost << "\"" << DirectedArrowhead() << "];\n";
-		}
-		std::cerr << "}\n";
-	}
-
 	Point ToPoint(int id) {
 		return Point(id % rows, id / rows);
 	}
@@ -120,21 +103,21 @@ struct Graph {
 	int FromXY(int x, int y) {
 		return x + y * rows;
 	}
-
 };
 
-
-CostType Astar(Graph& graph, int from_id, int to_id, int& visits);
-CostType Dijkstra(const Graph& graph, int from_id, int to_id, int& visits);
-
 int round_to_i(float f) {
-	return (int)std::floor((f) + 0.5f);
+	return (int)std::floor((f)+0.5f);
 }
 
-bool TestGraph(Graph& graph, int TestNum, const std::string& TestName, int start_id = -1, int end_id = -1) {
+CostType Dijkstra(const Graph& graph, int from_id, int to_id, int& visits);
+void AstarPrepareGraph(Graph& graph, int from_id, int to_id);
+CostType Astar(Graph& graph, int from_id, int to_id, int& visits);
+
+bool TestGraph(Graph& graph, const std::string& TestName, int TestNum, int start_id = -1, int end_id = -1) {
 
 	int visits = 0;
 
+	// if no start or end given make a random one.
 	if (start_id == -1) {
 		start_id = graph.FromXY(std::rand() % graph.rows, 0);
 	}
@@ -143,24 +126,22 @@ bool TestGraph(Graph& graph, int TestNum, const std::string& TestName, int start
 		end_id = graph.FromXY(graph.rows - (std::rand() % graph.rows) - 1, graph.cols - 1);
 	}
 	
-	std::cout << "From: " << start_id << " To: " << end_id << "\n";
-
 
 	Bench.StartTest();
 	int dijkstra_result = round_to_i(Dijkstra(graph, start_id, end_id, visits));
-
 	Bench.SwitchTest(visits);
+
+	// To get any meaningfull runtime results we decided to not count the time Astar requires to change the edge weights.
+	// Since the calculation requires calculating sqrt it is expensive enough for Astar to always be worst.
+	AstarPrepareGraph(graph, start_id, end_id);
+
+	Bench.StartTest();
 	visits = 0;
 	int astar_result = round_to_i(Astar(graph, start_id, end_id, visits));
 	Bench.StopTest(visits);
 
 
-	std::ostringstream PaddedName;
-	PaddedName << ": " << TestName.substr(0, 10 - 2);
-
-	std::cout << "# Test " << std::setw(2) << TestNum
-		<< std::left << std::setw(10) << PaddedName.str() << " > ";
-
+	std::cout << "# Test " << TestName << " > ";
 	if (dijkstra_result != astar_result) {
 		std::cout << "# Test failed. Results are different.\n";
 		std::cout << "# Dijk: " << dijkstra_result << " Astar: " << astar_result;
@@ -174,6 +155,28 @@ bool TestGraph(Graph& graph, int TestNum, const std::string& TestName, int start
 	return true;
 }
 
+std::string DirectedArrowhead() {
+	return GDirected ? "" : ", arrowhead=none";
+}
+
+void GraphVisPrint(const Graph& g) {
+
+	std::cerr << "digraph G {\n";
+	
+	for (const auto& edge : g.edges) {
+		std::cerr << edge.from << " -> " << edge.to
+			<< "[label=\"" << edge.cost << "\", weight=\"" << edge.cost << "\"" << DirectedArrowhead() << "];\n";
+	}
+
+	std::cerr << "}\n";
+}
+
+std::string GetGraphString(const Graph& g) {
+	return std::to_string(g.rows) + "x" + std::to_string(g.cols) + " @" + std::to_string(g.max_cost);
+}
+
+// Only used for debugging.
+// Exports a dijkstra search to a nice graphviz format with weight cost labels and paths.
 void AdvancedPrint(const Graph& g, const std::vector<CostType>& Costs, std::vector<int> Predecessor, int StartId, int TargetId) {
 	
 	std::unordered_set<int> SelectedPath;
@@ -215,6 +218,5 @@ void AdvancedPrint(const Graph& g, const std::vector<CostType>& Costs, std::vect
 	std::cerr << "}\n";
 	std::cerr << "Result: " << TheResult;
 }
-
 
 #endif

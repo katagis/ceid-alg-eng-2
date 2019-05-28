@@ -6,12 +6,14 @@
 #include <vector>
 #include <queue>
 
+
+
 CostType CalcH(Point p1, Point p2) {
 	return std::sqrt(
 		std::pow(p1.x - p2.x, 2) + std::pow(p1.y - p2.y, 2)
 		);
-
-	//return (((p1.x - p2.x) << 2) + ((p1.y - p2.y) << 2)) >> 2;
+		
+//	return (((p1.x - p2.x) << 1) + ((p1.y - p2.y) << 1)) >> 1;
 }
 
 #define DEBUG_RESULT
@@ -89,83 +91,48 @@ CostType Dijkstra(const Graph& graph, int from_id, int to_id, int& visits) {
 	return -1;
 }
 
-CostType Astar(Graph& graph, int from_id, int to_id, int& visits) {
+void AstarPrepareGraph(Graph& graph, int from_id, int to_id) {
 	using edge_it = std::vector<Edge>::iterator;
-	
-	Point target = graph.ToPoint(to_id);
-	
+
+	const Point target = graph.ToPoint(to_id);
+
 	for (edge_it it = graph.edges.begin(); it != graph.edges.end(); ++it) {
 		CostType u = CalcH(graph.ToPoint(it->from), target);
 		CostType v = CalcH(graph.ToPoint(it->to), target);
 
-
 		it->cost += v - u;
 	}
+}
+
+CostType Astar(Graph& graph, int from_id, int to_id, int& visits) {
 	CostType result = Dijkstra(graph, from_id, to_id, visits);
 
+	CostType h_s = CalcH(graph.ToPoint(from_id), graph.ToPoint(to_id));
 
-	CostType h_s = CalcH(graph.ToPoint(from_id), target);
-	CostType h_t = CalcH(graph.ToPoint(to_id), target);
-
-	std::cerr << "h(s): " << h_s << " h(t): " << h_t << std::endl;
-
-	return result + h_s;
+	return result + h_s; // essentially: result - (Ht - Hs) but Ht is always 0
 }
 
 int main()
 {
-	//std::srand(time(NULL));
-
-	// Error 1 example:
-	//std::srand(120);
-	//Graph g(4, 22, 1000);
-
-
+	std::srand(std::time(NULL));
 	
-
-	//Graph g(3, 3);
-	/*
-	g.Connect(0, 1, 50);
-	g.Connect(1, 2, 50);
-	g.Connect(0, 3, 5);
-	g.Connect(1, 4, 5);
-	g.Connect(2, 5, 10);
-	g.Connect(3, 4, 10);
-	g.Connect(4, 5, 10);
+	Graph g1(30, 1000, 10);
+	TestGraph(g1, GetGraphString(g1), 0);
 	
+	Graph g2(60, 1000, 10);
+	TestGraph(g2, GetGraphString(g2), 1);
 
-	g.Connect(3, 6, 3);
-	g.Connect(4, 7, 5);
-	g.Connect(5, 8, 50);
+	Graph g3(80, 1000, 10);
+	TestGraph(g3, GetGraphString(g3), 2);
 
+	Graph g4(30, 1000, 100);
+	TestGraph(g4, GetGraphString(g4), 3);
 
-	g.Connect(6, 7, 50);
-	g.Connect(7, 8, 50);
-	*/
+	Graph g5(60, 1000, 100);
+	TestGraph(g5, GetGraphString(g5), 4);
 
-	// std::srand(i);
-	// Graph g(4, 4, 10);
+	Graph g6(80, 1000, 100);
+	TestGraph(g6, GetGraphString(g6), 5);
 
-	/*
-	GDebugResult = true;
-
-	std::srand(1);
-	Graph g(3, 3, 10);
-	TestGraph(g, 0, "800x1000");
-	*/
-	for (int i = 0; i < 10000; ++i) {
-		std::srand(i);
-		Graph g(50, 300, 100);
-		if (!TestGraph(g, 0, "800x1000")) {
-			std::cout << "ERROR AT SEED: " << i;
-			getchar();
-			getchar();
-			GDebugResult = true;
-			--i;
-		}
-	}
-	
-	
-	
-
+	Bench.Print();
 }
