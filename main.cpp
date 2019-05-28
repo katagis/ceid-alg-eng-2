@@ -1,7 +1,3 @@
-bool GDirected = false;
-#define SELECT_ON_GRAPH(UndirectedCode, DirectedCode) if (!GDirected) { UndirectedCode } else { DirectedCode }
-
-
 #include "testbench.h"
 #include "util.h"
 #include <iostream>
@@ -18,7 +14,6 @@ CostType CalcH(Point p1, Point p2) {
 	//return (((p1.x - p2.x) << 2) + ((p1.y - p2.y) << 2)) >> 2;
 }
 
-bool GDebugResult = false;
 #define DEBUG_RESULT
 CostType Dijkstra(const Graph& graph, int from_id, int to_id, int& visits) {
 	using CostForNode = std::pair<CostType, std::pair<int, int>>;
@@ -100,11 +95,11 @@ CostType Astar(Graph& graph, int from_id, int to_id, int& visits) {
 	Point target = graph.ToPoint(to_id);
 	
 	for (edge_it it = graph.edges.begin(); it != graph.edges.end(); ++it) {
-		CostType n1 = CalcH(graph.ToPoint(it->from), target);
-		CostType n2 = CalcH(graph.ToPoint(it->to), target);
+		CostType u = CalcH(graph.ToPoint(it->from), target);
+		CostType v = CalcH(graph.ToPoint(it->to), target);
 
 
-		it->cost += n1 - n2;
+		it->cost += v - u;
 	}
 	CostType result = Dijkstra(graph, from_id, to_id, visits);
 
@@ -114,7 +109,7 @@ CostType Astar(Graph& graph, int from_id, int to_id, int& visits) {
 
 	std::cerr << "h(s): " << h_s << " h(t): " << h_t << std::endl;
 
-	return result - std::abs(h_s - h_t);
+	return result + h_s;
 }
 
 int main()
@@ -151,10 +146,16 @@ int main()
 	// std::srand(i);
 	// Graph g(4, 4, 10);
 
-	
+	/*
+	GDebugResult = true;
+
+	std::srand(1);
+	Graph g(3, 3, 10);
+	TestGraph(g, 0, "800x1000");
+	*/
 	for (int i = 0; i < 10000; ++i) {
-		std::srand(1);
-		Graph g(3, 3, 10);
+		std::srand(i);
+		Graph g(50, 300, 100);
 		if (!TestGraph(g, 0, "800x1000")) {
 			std::cout << "ERROR AT SEED: " << i;
 			getchar();
@@ -163,6 +164,7 @@ int main()
 			--i;
 		}
 	}
+	
 	
 	
 

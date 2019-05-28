@@ -1,8 +1,12 @@
 #ifndef __UTIL_H_
 #define __UTIL_H_
+#include "testbench.h"
 #include <vector>
 #include <unordered_set>
 #include <iostream>
+
+bool GDirected = true;
+bool GDebugResult = false;
 
 static Benchmark Bench;
 
@@ -81,6 +85,16 @@ struct Graph {
 		int id = edges.size();
 		edges.push_back(e);
 		nodes[node1].edges.push_back(id);
+
+		if (!GDirected) {
+			nodes[node2].edges.push_back(id);
+			return;
+		}
+		
+		e.from = node2;
+		e.to = node1;
+		id = edges.size();
+		edges.push_back(e);
 		nodes[node2].edges.push_back(id);
 	}
 
@@ -174,7 +188,7 @@ void AdvancedPrint(const Graph& g, const std::vector<CostType>& Costs, std::vect
 		TheResult += edge.cost;
 
 		if (!GDirected) {
-			CurrNode = edge.to == CurrNode ? edge.to : edge.from;
+			CurrNode = edge.to == CurrNode ? edge.from : edge.to;
 		}
 		else {
 			CurrNode = edge.from;

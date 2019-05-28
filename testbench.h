@@ -1,3 +1,6 @@
+#ifndef __TESTBENCH_H_
+#define __TESTBENCH_H_
+
 #include <iostream>
 #include <vector>
 #include <iomanip>
@@ -169,3 +172,5 @@ public:
         }
 	}
 };
+
+#endif //__TESTBENCH_H_
