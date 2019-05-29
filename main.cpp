@@ -12,11 +12,8 @@ CostType CalcH(Point p1, Point p2) {
 	return std::sqrt(
 		std::pow(p1.x - p2.x, 2) + std::pow(p1.y - p2.y, 2)
 		);
-		
-//	return (((p1.x - p2.x) << 1) + ((p1.y - p2.y) << 1)) >> 1;
 }
 
-#define DEBUG_RESULT
 CostType Dijkstra(const Graph& graph, int from_id, int to_id, int& visits) {
 	typedef std::pair<CostType, std::pair<int, int>> CostForNode;
 	typedef std::vector<int>::const_iterator edge_it;
@@ -60,15 +57,10 @@ CostType Dijkstra(const Graph& graph, int from_id, int to_id, int& visits) {
 		const std::vector<int>& adj_edges = graph.nodes[top].edges;
 		for (edge_it it = adj_edges.cbegin(); it != adj_edges.cend(); ++it) {
 			const Edge& edge = graph.edges[*it];
-			
-			int target = edge.to;
-			if (!GDirected) {
-				target = edge.to == top ? edge.from : edge.to;
-			}
 
-			if (cost[target] < 0) {
+			if (cost[edge.to] < 0) {
 				const CostType tot_cost = edge.cost + top_cost;
-				queue.push(CostForNode::pair(tot_cost, std::pair<int, int>(target, *it)));
+				queue.push(CostForNode::pair(tot_cost, std::pair<int, int>(edge.to, *it)));
 			}
 		}
 	}

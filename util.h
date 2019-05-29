@@ -5,12 +5,8 @@
 #include <unordered_set>
 #include <iostream>
 
-bool GDirected = true;
-bool GDebugResult = false;
-
 static Benchmark Bench;
 
-// Used during development to performance differences between calculation types.
 typedef float CostType;
 
 struct Node {
@@ -77,11 +73,6 @@ struct Graph {
 		int id = edges.size();
 		edges.push_back(e);
 		nodes[node1].edges.push_back(id);
-
-		if (!GDirected) {
-			nodes[node2].edges.push_back(id);
-			return;
-		}
 		
 		e.from = node2;
 		e.to = node1;
@@ -155,10 +146,6 @@ bool TestGraph(Graph& graph, const std::string& TestName, int TestNum, int start
 	return true;
 }
 
-std::string DirectedArrowhead() {
-	return GDirected ? "" : ", arrowhead=none";
-}
-
 void GraphVisPrint(const Graph& g) {
 
 	typedef std::vector<Edge>::const_iterator edge_it;
@@ -167,7 +154,7 @@ void GraphVisPrint(const Graph& g) {
 	for (edge_it it = g.edges.cbegin(); it != g.edges.cend(); ++it) {
 		const Edge& edge = *it;
 		std::cerr << edge.from << " -> " << edge.to
-			<< "[label=\"" << edge.cost << "\", weight=\"" << edge.cost << "\"" << DirectedArrowhead() << "];\n";
+			<< "[label=\"" << edge.cost << "\", weight=\"" << edge.cost << "\"];\n";
 	}
 
 	std::cerr << "}\n";
@@ -191,14 +178,7 @@ void AdvancedPrint(const Graph& g, const std::vector<CostType>& Costs, std::vect
 		SelectedPath.insert(Predecessor[CurrNode]);
 		const Edge& edge = g.edges[Predecessor[CurrNode]];
 		TheResult += edge.cost;
-
-		if (!GDirected) {
-			CurrNode = edge.to == CurrNode ? edge.from : edge.to;
-		}
-		else {
-			CurrNode = edge.from;
-		}		
-		
+		CurrNode = edge.from;
 	}
 
 	std::cerr << "digraph G {\n";
@@ -212,7 +192,7 @@ void AdvancedPrint(const Graph& g, const std::vector<CostType>& Costs, std::vect
 
 
 		std::cerr << edge.from << " -> " << edge.to
-			<< "[label=\"" << edge.cost << "\", weight=\"" << std::setprecision(4) << edge.cost << "\"" << DirectedArrowhead()
+			<< "[label=\"" << edge.cost << "\", weight=\"" << std::setprecision(4) << edge.cost << "\""
 			<< (SelectedPath.count(i) > 0 ? ", color=red, penwidth=3" : "")
 			<< "];\n";
 	}
