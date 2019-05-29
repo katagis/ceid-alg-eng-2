@@ -18,8 +18,8 @@ CostType CalcH(Point p1, Point p2) {
 
 #define DEBUG_RESULT
 CostType Dijkstra(const Graph& graph, int from_id, int to_id, int& visits) {
-	using CostForNode = std::pair<CostType, std::pair<int, int>>;
-	using edge_it = std::vector<int>::const_iterator;
+	typedef std::pair<CostType, std::pair<int, int>> CostForNode;
+	typedef std::vector<int>::const_iterator edge_it;
 
 
 	std::vector<CostType> cost(graph.nodes.size(), -1); // cost to reach node with the particular id.
@@ -38,10 +38,6 @@ CostType Dijkstra(const Graph& graph, int from_id, int to_id, int& visits) {
 	visits = 0;
 	queue.push(CostForNode::pair(0.0f, std::pair<int, int>(from_id, -1)));
 
-#ifdef DEBUG_RESULT
-	std::vector<int> predecessor_edge(graph.nodes.size(), -1);
-#endif
-
 	while (!queue.empty()) {
 		CostForNode top_pair = queue.top();
 		queue.pop();
@@ -50,14 +46,6 @@ CostType Dijkstra(const Graph& graph, int from_id, int to_id, int& visits) {
 		const int top = top_pair.second.first;
 
 		if (top == to_id) {
-#ifdef DEBUG_RESULT
-			if (GDebugResult) {
-				cost[to_id] = top_cost;
-				predecessor_edge[to_id] = top_pair.second.second;
-				AdvancedPrint(graph, cost, predecessor_edge, from_id, to_id);
-			}
-#endif
-
 			return top_cost;
 		}
 
@@ -68,10 +56,6 @@ CostType Dijkstra(const Graph& graph, int from_id, int to_id, int& visits) {
 
 		cost[top] = top_cost;
 		visits++;
-
-#ifdef DEBUG_RESULT
-		predecessor_edge[top] = top_pair.second.second;		
-#endif
 
 		const std::vector<int>& adj_edges = graph.nodes[top].edges;
 		for (edge_it it = adj_edges.cbegin(); it != adj_edges.cend(); ++it) {
@@ -92,7 +76,7 @@ CostType Dijkstra(const Graph& graph, int from_id, int to_id, int& visits) {
 }
 
 void AstarPrepareGraph(Graph& graph, int from_id, int to_id) {
-	using edge_it = std::vector<Edge>::iterator;
+	typedef std::vector<Edge>::iterator edge_it;
 
 	const Point target = graph.ToPoint(to_id);
 
@@ -114,7 +98,7 @@ CostType Astar(Graph& graph, int from_id, int to_id, int& visits) {
 
 int main()
 {
-	std::srand(std::time(NULL));
+	std::srand(time(NULL));
 	
 	Graph g1(30, 1000, 10);
 	TestGraph(g1, GetGraphString(g1), 0);

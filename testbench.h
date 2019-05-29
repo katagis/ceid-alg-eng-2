@@ -112,8 +112,7 @@ public:
 		long long AbsDiff = Hi - Lo;
 
 		std::string Who = DijkT < AstarT ? "Dijk" : "A* ";
-		int StepDiff = DijkT < AstarT ? DijkT.Steps - AstarT.Steps : AstarT.Steps - DijkT.Steps;
-		std::cout << "\n\t| " << Who << " is faster by: " << std::setw(3) << Percent << "% ( " << AbsDiff << TimestepStr << " ) Step Difference: " << StepDiff << " \n" ;
+		std::cout << "\n\t| " << Who << " is faster by: " << std::setw(3) << Percent << "% ( " << AbsDiff << TimestepStr << " ) A* did " << (DijkT.Steps - AstarT.Steps) << " less steps.\n" ;
 	}
 
 public:

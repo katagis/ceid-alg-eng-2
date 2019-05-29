@@ -11,7 +11,7 @@ bool GDebugResult = false;
 static Benchmark Bench;
 
 // Used during development to performance differences between calculation types.
-using CostType = float;
+typedef float CostType;
 
 struct Node {
 	std::vector<int> edges;
@@ -161,9 +161,11 @@ std::string DirectedArrowhead() {
 
 void GraphVisPrint(const Graph& g) {
 
+	typedef std::vector<Edge>::const_iterator edge_it;
 	std::cerr << "digraph G {\n";
 	
-	for (const auto& edge : g.edges) {
+	for (edge_it it = g.edges.cbegin(); it != g.edges.cend(); ++it) {
+		const Edge& edge = *it;
 		std::cerr << edge.from << " -> " << edge.to
 			<< "[label=\"" << edge.cost << "\", weight=\"" << edge.cost << "\"" << DirectedArrowhead() << "];\n";
 	}
@@ -172,7 +174,7 @@ void GraphVisPrint(const Graph& g) {
 }
 
 std::string GetGraphString(const Graph& g) {
-	return std::to_string(g.rows) + "x" + std::to_string(g.cols) + " @" + std::to_string(g.max_cost);
+	return std::to_string((long long)g.rows) + "x" + std::to_string((long long)g.cols) + " @" + std::to_string((long long)g.max_cost);
 }
 
 // Only used for debugging.
@@ -216,7 +218,7 @@ void AdvancedPrint(const Graph& g, const std::vector<CostType>& Costs, std::vect
 	}
 
 	std::cerr << "}\n";
-	std::cerr << "Result: " << TheResult;
+	std::cerr << "Result: " << TheResult << "\n";
 }
 
 #endif
