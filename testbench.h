@@ -1,6 +1,10 @@
 #ifndef __TESTBENCH_H_
 #define __TESTBENCH_H_
 
+// Notes: this testbench.h is nearly identical to the one that was submitted in the previous
+// assignment with a few changes to output formatting (now also counts steps made)
+// and more importantly a fix on the unix timer overflow (whoops)
+
 #include <iostream>
 #include <vector>
 #include <iomanip>
@@ -15,7 +19,6 @@
 namespace ch = std::chrono;
 #else 
 // Chrono is not available on g++ 4.4.7
-// Use Unix Time, sometimes fails but its the only timer that provides proper microseconds
 #include <sys/time.h>
 #endif
 
@@ -49,7 +52,6 @@ bool operator<(TestData& rhs, const TestData& lhs) {
 // Struct to hold the benchmark results.
 // Implementation can switch between chrono / unix time through defining USE_CHRONO.
 // Chrono is a bit more accurate but not available on older c++ versions.
-// All time values (stored as long long) are in microseconds.
 
 struct Benchmark {
 
@@ -67,15 +69,13 @@ private:
 		return ch::duration_cast<ch::microseconds>(ch::system_clock::now() - StartTime).count();
 	}
 #else
-	long StartTime;
+	struct timeval StartTime;
 
-	long GetUnixMicros() const {
+	timeval GetUnixMicros() const {
 		struct timeval TimeVal;
 		struct timezone TimeZone;
-		if (gettimeofday(&TimeVal, &TimeZone)) {
-            return 0;
-        }
-		return TimeVal.tv_usec;
+		gettimeofday(&TimeVal, &TimeZone);
+		return TimeVal;
 	}
 
 	void RestartTimer() {
@@ -83,11 +83,11 @@ private:
 	}
 
 	long long GetCurrent() const {
-        long UnixMicros = GetUnixMicros();
-        if (UnixMicros <= 0 || StartTime <= 0) {
-            return 0;
-        }
-        return UnixMicros - StartTime;
+        struct timeval EndTime = GetUnixMicros();
+		if (EndTime.tv_sec == StartTime.tv_sec) {
+			return EndTime.tv_usec - StartTime.tv_usec;
+		}
+		return (EndTime.tv_sec - StartTime.tv_sec - 1) * 1000000 + (1000000 - StartTime.tv_usec) + EndTime.tv_usec;
 	}
 #endif
 
@@ -99,11 +99,6 @@ public:
 		std::cout << std::right;
 		std::cout << "\n\t| Dijk: " << std::setw(7) << DijkT.Time << TimestepStr << " | " << std::setw(3) << DijkT.Steps << " steps"
 				 << "\n\t| A*  : " << std::setw(7) << AstarT.Time << TimestepStr << " | " << std::setw(3) << AstarT.Steps << " steps";
-
-        if (DijkT.Time <= 0 || AstarT.Time <= 0) {
-		    std::cout << "\t- Invalid timer result detected. -\n";
-            return;
-        }
 
 		long long Hi = std::max(DijkT.Time, AstarT.Time);
 		long long Lo = std::max(std::min(DijkT.Time, AstarT.Time), 1LL);
@@ -150,25 +145,13 @@ public:
 		TestData DijkTotal;
 		TestData AstarTotal;
 		for (int i = 0; i < DijkTime.size(); ++i) {
-            if (DijkTime[i].Time > 0 && AstarTime[i].Time > 0) {
-                DijkTotal += DijkTime[i];
-                AstarTotal += AstarTime[i];
-            }
-            else {
-                ContainsInvalidResult = true;
-            }
+			DijkTotal += DijkTime[i];
+			AstarTotal += AstarTime[i];
 		}
 
 		std::cout << "Totals:";
 		PrintBenchLine(DijkTotal, AstarTotal);
         std::cout << "\n";
-
-        if (ContainsInvalidResult) {
-            std::cout << "Unix timer does not always guarantee returning a valid time.\n"
-                    << "It is HIGHLY recommended to use chrono if possible for better results.\n"
-                    << "Results detected with invalid times where not included in the total.\n\n"
-                    << "Rerunning the program usually fixes this.\n";
-        }
 	}
 };
 
